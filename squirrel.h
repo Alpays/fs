@@ -1,395 +1,1004 @@
 /*
-Copyright (c) 2003-2014 Alberto Demichelis
+   Project: Vice City Multiplayer 0.4 Server / Plugin Kit
+   File: plugin.h
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+   Copyright 2011-2016 Ago Allikmaa (maxorator)
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
 */
-#ifndef _SQUIRREL_H_
-#define _SQUIRREL_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#pragma once
 
-#ifndef SQUIRREL_API
-#define SQUIRREL_API extern
-#endif
+#include <stdint.h>
+#include <stdlib.h>
 
-#if (defined(_WIN64) || defined(_LP64))
-#ifndef _SQ64
-#define _SQ64
-#endif
-#endif
+typedef struct {
+	uint32_t structSize;
+	char serverName[128];
+	uint32_t maxPlayers;
+	uint32_t port;
+	uint32_t flags;
+} ServerSettings;
 
+#define PLUGIN_API_MAJOR 2
+#define PLUGIN_API_MINOR 0
 
-#define SQTrue	(1)
-#define SQFalse	(0)
+typedef struct {
+	uint32_t structSize;
+	uint32_t pluginId;
+	char name[32];
+	uint32_t pluginVersion;
+	uint16_t apiMajorVersion;
+	uint16_t apiMinorVersion;
+} PluginInfo;
 
-struct SQVM;
-struct SQTable;
-struct SQArray;
-struct SQString;
-struct SQClosure;
-struct SQGenerator;
-struct SQNativeClosure;
-struct SQUserData;
-struct SQFunctionProto;
-struct SQRefCounted;
-struct SQClass;
-struct SQInstance;
-struct SQDelegable;
-struct SQOuter;
+typedef enum {
+	vcmpErrorNone = 0,
+	vcmpErrorNoSuchEntity = 1,
+	vcmpErrorBufferTooSmall = 2,
+	vcmpErrorTooLargeInput = 3,
+	vcmpErrorArgumentOutOfBounds = 4,
+	vcmpErrorNullArgument = 5,
+	vcmpErrorPoolExhausted = 6,
+	vcmpErrorInvalidName = 7,
+	vcmpErrorRequestDenied = 8,
+	forceSizeVcmpError = INT32_MAX
+} vcmpError;
 
-#ifdef _UNICODE
-#define SQUNICODE
-#endif
+typedef enum {
+	vcmpEntityPoolVehicle = 1,
+	vcmpEntityPoolObject = 2,
+	vcmpEntityPoolPickup = 3,
+	vcmpEntityPoolRadio = 4,
+	vcmpEntityPoolBlip = 7,
+	vcmpEntityPoolCheckPoint = 8,
+	forceSizeVcmpEntityPool = INT32_MAX
+} vcmpEntityPool;
 
-#include "sqconfig.h"
+typedef enum {
+	vcmpDisconnectReasonTimeout = 0,
+	vcmpDisconnectReasonQuit = 1,
+	vcmpDisconnectReasonKick = 2,
+	vcmpDisconnectReasonCrash = 3,
+	vcmpDisconnectReasonAntiCheat = 4,
+	forceSizeVcmpDisconnectReason = INT32_MAX
+} vcmpDisconnectReason;
 
-#define SQUIRREL_VERSION	_SC("Squirrel 3.1 RC1")
-#define SQUIRREL_COPYRIGHT	_SC("Copyright (C) 2003-2015 Alberto Demichelis")
-#define SQUIRREL_AUTHOR		_SC("Alberto Demichelis")
-#define SQUIRREL_VERSION_NUMBER	310
+typedef enum {
+	vcmpBodyPartBody = 0,
+	vcmpBodyPartTorso = 1,
+	vcmpBodyPartLeftArm = 2,
+	vcmpBodyPartRightArm = 3,
+	vcmpBodyPartLeftLeg = 4,
+	vcmpBodyPartRightLeg = 5,
+	vcmpBodyPartHead = 6,
+	vcmpBodyPartInVehicle = 7,
+	forceSizeVcmpBodyPart = INT32_MAX
+} vcmpBodyPart;
 
-#define SQ_VMSTATE_IDLE			0
-#define SQ_VMSTATE_RUNNING		1
-#define SQ_VMSTATE_SUSPENDED	2
+typedef enum {
+	vcmpPlayerStateNone = 0,
+	vcmpPlayerStateNormal = 1,
+	vcmpPlayerStateAim = 2,
+	vcmpPlayerStateDriver = 3,
+	vcmpPlayerStatePassenger = 4,
+	vcmpPlayerStateEnterDriver = 5,
+	vcmpPlayerStateEnterPassenger = 6,
+	vcmpPlayerStateExit = 7,
+	vcmpPlayerStateUnspawned = 8,
+	forceSizeVcmpPlayerState = INT32_MAX
+} vcmpPlayerState;
 
-#define SQUIRREL_EOB 0
-#define SQ_BYTECODE_STREAM_TAG	0xFAFA
+typedef enum {
+	vcmpPlayerUpdateNormal = 0,
+	vcmpPlayerUpdateAiming = 1,
+	vcmpPlayerUpdateDriver = 2,
+	vcmpPlayerUpdatePassenger = 3,
+	forceSizeVcmpPlayerUpdate = INT32_MAX
+} vcmpPlayerUpdate;
 
-#define SQOBJECT_REF_COUNTED	0x08000000
-#define SQOBJECT_NUMERIC		0x04000000
-#define SQOBJECT_DELEGABLE		0x02000000
-#define SQOBJECT_CANBEFALSE		0x01000000
+typedef enum {
+	vcmpPlayerVehicleOut = 0,
+	vcmpPlayerVehicleEntering = 1,
+	vcmpPlayerVehicleExiting = 2,
+	vcmpPlayerVehicleIn = 3,
+	forceSizeVcmpPlayerVehicle = INT32_MAX
+} vcmpPlayerVehicle;
 
-#define SQ_MATCHTYPEMASKSTRING (-99999)
+typedef enum {
+	vcmpVehicleSyncNone = 0,
+	vcmpVehicleSyncDriver = 1,
+	vcmpVehicleSyncPassenger = 3,
+	vcmpVehicleSyncNear = 4,
+	forceSizeVcmpVehicleSync = INT32_MAX
+} vcmpVehicleSync;
 
-#define _RT_MASK 0x00FFFFFF
-#define _RAW_TYPE(type) (type&_RT_MASK)
+typedef enum {
+	vcmpVehicleUpdateDriverSync = 0,
+	vcmpVehicleUpdateOtherSync = 1,
+	vcmpVehicleUpdatePosition = 2,
+	vcmpVehicleUpdateHealth = 4,
+	vcmpVehicleUpdateColour = 5,
+	vcmpVehicleUpdateRotation = 6,
+	forceSizeVcmpVehicleUpdate = INT32_MAX
+} vcmpVehicleUpdate;
 
-#define _RT_NULL			0x00000001
-#define _RT_INTEGER			0x00000002
-#define _RT_FLOAT			0x00000004
-#define _RT_BOOL			0x00000008
-#define _RT_STRING			0x00000010
-#define _RT_TABLE			0x00000020
-#define _RT_ARRAY			0x00000040
-#define _RT_USERDATA		0x00000080
-#define _RT_CLOSURE			0x00000100
-#define _RT_NATIVECLOSURE	0x00000200
-#define _RT_GENERATOR		0x00000400
-#define _RT_USERPOINTER		0x00000800
-#define _RT_THREAD			0x00001000
-#define _RT_FUNCPROTO		0x00002000
-#define _RT_CLASS			0x00004000
-#define _RT_INSTANCE		0x00008000
-#define _RT_WEAKREF			0x00010000
-#define _RT_OUTER			0x00020000
+typedef enum {
+	vcmpServerOptionSyncFrameLimiter = 0,
+	vcmpServerOptionFrameLimiter = 1,
+	vcmpServerOptionTaxiBoostJump = 2,
+	vcmpServerOptionDriveOnWater = 3,
+	vcmpServerOptionFastSwitch = 4,
+	vcmpServerOptionFriendlyFire = 5,
+	vcmpServerOptionDisableDriveBy = 6,
+	vcmpServerOptionPerfectHandling = 7,
+	vcmpServerOptionFlyingCars = 8,
+	vcmpServerOptionJumpSwitch = 9,
+	vcmpServerOptionShowMarkers = 10,
+	vcmpServerOptionOnlyShowTeamMarkers = 11,
+	vcmpServerOptionStuntBike = 12,
+	vcmpServerOptionShootInAir = 13,
+	vcmpServerOptionShowNameTags = 14,
+	vcmpServerOptionJoinMessages = 15,
+	vcmpServerOptionDeathMessages = 16,
+	vcmpServerOptionChatTagsEnabled = 17,
+	vcmpServerOptionUseClasses = 18,
+	vcmpServerOptionWallGlitch = 19,
+	vcmpServerOptionDisableBackfaceCulling = 20,
+	vcmpServerOptionDisableHeliBladeDamage = 21,
+	vcmpServerOptionDisableCrouch = 22,
+	forceSizeVcmpServerOption = INT32_MAX
+} vcmpServerOption;
 
-typedef enum tagSQObjectType{
-	OT_NULL =			(_RT_NULL|SQOBJECT_CANBEFALSE),
-	OT_INTEGER =		(_RT_INTEGER|SQOBJECT_NUMERIC|SQOBJECT_CANBEFALSE),
-	OT_FLOAT =			(_RT_FLOAT|SQOBJECT_NUMERIC|SQOBJECT_CANBEFALSE),
-	OT_BOOL =			(_RT_BOOL|SQOBJECT_CANBEFALSE),
-	OT_STRING =			(_RT_STRING|SQOBJECT_REF_COUNTED),
-	OT_TABLE =			(_RT_TABLE|SQOBJECT_REF_COUNTED|SQOBJECT_DELEGABLE),
-	OT_ARRAY =			(_RT_ARRAY|SQOBJECT_REF_COUNTED),
-	OT_USERDATA =		(_RT_USERDATA|SQOBJECT_REF_COUNTED|SQOBJECT_DELEGABLE),
-	OT_CLOSURE =		(_RT_CLOSURE|SQOBJECT_REF_COUNTED),
-	OT_NATIVECLOSURE =	(_RT_NATIVECLOSURE|SQOBJECT_REF_COUNTED),
-	OT_GENERATOR =		(_RT_GENERATOR|SQOBJECT_REF_COUNTED),
-	OT_USERPOINTER =	_RT_USERPOINTER,
-	OT_THREAD =			(_RT_THREAD|SQOBJECT_REF_COUNTED) ,
-	OT_FUNCPROTO =		(_RT_FUNCPROTO|SQOBJECT_REF_COUNTED), //internal usage only
-	OT_CLASS =			(_RT_CLASS|SQOBJECT_REF_COUNTED),
-	OT_INSTANCE =		(_RT_INSTANCE|SQOBJECT_REF_COUNTED|SQOBJECT_DELEGABLE),
-	OT_WEAKREF =		(_RT_WEAKREF|SQOBJECT_REF_COUNTED),
-	OT_OUTER =			(_RT_OUTER|SQOBJECT_REF_COUNTED) //internal usage only
-}SQObjectType;
+typedef enum {
+	vcmpPlayerOptionControllable = 0,
+	vcmpPlayerOptionDriveBy = 1,
+	vcmpPlayerOptionWhiteScanlines = 2,
+	vcmpPlayerOptionGreenScanlines = 3,
+	vcmpPlayerOptionWidescreen = 4,
+	vcmpPlayerOptionShowMarkers = 5,
+	vcmpPlayerOptionCanAttack = 6,
+	vcmpPlayerOptionHasMarker = 7,
+	vcmpPlayerOptionChatTagsEnabled = 8,
+	vcmpPlayerOptionDrunkEffectsDeprecated = 9,
+	vcmpPlayerOptionBleeding = 10,
+	forceSizeVcmpPlayerOption = INT32_MAX
+} vcmpPlayerOption;
 
-#define ISREFCOUNTED(t) (t&SQOBJECT_REF_COUNTED)
+typedef enum {
+	vcmpVehicleOptionDoorsLocked = 0,
+	vcmpVehicleOptionAlarm = 1,
+	vcmpVehicleOptionLights = 2,
+	vcmpVehicleOptionRadioLocked = 3,
+	vcmpVehicleOptionGhost = 4,
+	vcmpVehicleOptionSiren = 5,
+	vcmpVehicleOptionSingleUse = 6,
+	vcmpVehicleOptionEngineDisabled = 7,
+	vcmpVehicleOptionBootOpen = 8,
+	vcmpVehicleOptionBonnetOpen = 9,
+	forceSizeVcmpVehicleOption = INT32_MAX
+} vcmpVehicleOption;
 
+typedef enum {
+	vcmpPickupOptionSingleUse = 0,
+	forceSizeVcmpPickupOption = INT32_MAX
+} vcmpPickupOption;
 
-typedef union tagSQObjectValue
-{
-	struct SQTable *pTable;
-	struct SQArray *pArray;
-	struct SQClosure *pClosure;
-	struct SQOuter *pOuter;
-	struct SQGenerator *pGenerator;
-	struct SQNativeClosure *pNativeClosure;
-	struct SQString *pString;
-	struct SQUserData *pUserData;
-	SQInteger nInteger;
-	SQFloat fFloat;
-	SQUserPointer pUserPointer;
-	struct SQFunctionProto *pFunctionProto;
-	struct SQRefCounted *pRefCounted;
-	struct SQDelegable *pDelegable;
-	struct SQVM *pThread;
-	struct SQClass *pClass;
-	struct SQInstance *pInstance;
-	struct SQWeakRef *pWeakRef;
-	SQRawObjectVal raw;
-}SQObjectValue;
+typedef struct {
+	uint32_t structSize;
 
+	/**
+	 * Plugin system
+	 */
 
-typedef struct tagSQObject
-{
-	SQObjectType _type;
-	SQObjectValue _unVal;
-}SQObject;
+	/* success */
+	uint32_t (*GetServerVersion) (void);
+	/* vcmpErrorNullArgument */
+	vcmpError (*GetServerSettings) (ServerSettings* settings);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*ExportFunctions) (int32_t pluginId, const void** functionList, size_t size);
+	/* success */
+	uint32_t (*GetNumberOfPlugins) (void);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument */
+	vcmpError (*GetPluginInfo) (int32_t pluginId, PluginInfo* pluginInfo);
+	/* -1 == vcmpEntityNone */
+	int32_t (*FindPlugin) (const char* pluginName);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	const void** (*GetPluginExports) (int32_t pluginId, size_t* exportCount);
+	/* vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SendPluginCommand) (uint32_t commandIdentifier, const char* format, ...);
+	/* success */
+	uint64_t (*GetTime) (void);
+	/* vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*LogMessage) (const char* format, ...);
+	/* success */
+	vcmpError (*GetLastError) (void);
 
-typedef struct  tagSQMemberHandle{
-	SQBool _static;
-	SQInteger _index;
-}SQMemberHandle;
+	/**
+	 * Client messages
+	 */
 
-typedef struct tagSQStackInfos{
-	const SQChar* funcname;
-	const SQChar* source;
-	SQInteger line;
-}SQStackInfos;
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SendClientScriptData) (int32_t playerId, const void* data, size_t size);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SendClientMessage) (int32_t playerId, uint32_t colour, const char* format, ...);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds, vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SendGameMessage) (int32_t playerId, int32_t type, const char* format, ...);
 
-typedef struct SQVM* HSQUIRRELVM;
-typedef SQObject HSQOBJECT;
-typedef SQMemberHandle HSQMEMBERHANDLE;
-typedef SQInteger (*SQFUNCTION)(HSQUIRRELVM);
-typedef SQInteger (*SQRELEASEHOOK)(SQUserPointer,SQInteger size);
-typedef void (*SQCOMPILERERROR)(HSQUIRRELVM,const SQChar * /*desc*/,const SQChar * /*source*/,SQInteger /*line*/,SQInteger /*column*/);
-typedef void (*SQPRINTFUNCTION)(HSQUIRRELVM,const SQChar * ,...);
-typedef void (*SQDEBUGHOOK)(HSQUIRRELVM /*v*/, SQInteger /*type*/, const SQChar * /*sourcename*/, SQInteger /*line*/, const SQChar * /*funcname*/);
-typedef SQInteger (*SQWRITEFUNC)(SQUserPointer,SQUserPointer,SQInteger);
-typedef SQInteger (*SQREADFUNC)(SQUserPointer,SQUserPointer,SQInteger);
+	/*
+	 * Server settings
+	 */
 
-typedef SQInteger (*SQLEXREADFUNC)(SQUserPointer);
+	/* vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SetServerName) (const char* text);
+	/* vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetServerName) (char* buffer, size_t size);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetMaxPlayers) (uint32_t maxPlayers);
+	/* success */
+	uint32_t (*GetMaxPlayers) (void);
+	/* vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SetServerPassword) (const char* password);
+	/* vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetServerPassword) (char* buffer, size_t size);
+	/* vcmpErrorNullArgument, vcmpErrorTooLargeInput */
+	vcmpError (*SetGameModeText) (const char* gameMode);
+	/* vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetGameModeText) (char* buffer, size_t size);
+	/* success */
+	void (*ShutdownServer) (void);
 
-typedef struct tagSQRegFunction{
-	const SQChar *name;
-	SQFUNCTION f;
-	SQInteger nparamscheck;
-	const SQChar *typemask;
-}SQRegFunction;
+	/*
+	 * Game environment settings
+	 */
 
-typedef struct tagSQFunctionInfo {
-	SQUserPointer funcid;
-	const SQChar *name;
-	const SQChar *source;
-	SQInteger line;
-}SQFunctionInfo;
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetServerOption) (vcmpServerOption option, uint8_t toggle);
+	/* GetLastError: vcmpErrorArgumentOutOfBounds */
+	uint8_t (*GetServerOption) (vcmpServerOption option);
+	/* success */
+	void (*SetWorldBounds) (float maxX, float minX, float maxY, float minY);
+	/* success */
+	void (*GetWorldBounds) (float* maxXOut, float* minXOut, float* maxYOut, float* minYOut);
+	/* success */
+	void (*SetWastedSettings) (uint32_t deathTimer, uint32_t fadeTimer, float fadeInSpeed, float fadeOutSpeed, uint32_t fadeColour, uint32_t corpseFadeStart, uint32_t corpseFadeTime);
+	/* success */
+	void (*GetWastedSettings) (uint32_t* deathTimerOut, uint32_t* fadeTimerOut, float* fadeInSpeedOut, float* fadeOutSpeedOut, uint32_t* fadeColourOut, uint32_t* corpseFadeStartOut, uint32_t* corpseFadeTimeOut);
+	/* success */
+	void (*SetTimeRate) (int32_t timeRate);
+	/* success */
+	int32_t (*GetTimeRate) (void);
+	/* success */
+	void (*SetHour) (int32_t hour);
+	/* success */
+	int32_t (*GetHour) (void);
+	/* success */
+	void (*SetMinute) (int32_t minute);
+	/* success */
+	int32_t (*GetMinute) (void);
+	/* success */
+	void (*SetWeather) (int32_t weather);
+	/* success */
+	int32_t (*GetWeather) (void);
+	/* success */
+	void (*SetGravity) (float gravity);
+	/* success */
+	float (*GetGravity) (void);
+	/* success */
+	void (*SetGameSpeed) (float gameSpeed);
+	/* success */
+	float (*GetGameSpeed) (void);
+	/* success */
+	void (*SetWaterLevel) (float waterLevel);
+	/* success */
+	float (*GetWaterLevel) (void);
+	/* success */
+	void (*SetMaximumFlightAltitude) (float height);
+	/* success */
+	float (*GetMaximumFlightAltitude) (void);
+	/* success */
+	void (*SetKillCommandDelay) (int32_t delay);
+	/* success */
+	int32_t (*GetKillCommandDelay) (void);
+	/* success */
+	void (*SetVehiclesForcedRespawnHeight) (float height);
+	/* success */
+	float (*GetVehiclesForcedRespawnHeight) (void);
 
-/*vm*/
-SQUIRREL_API HSQUIRRELVM sq_open(SQInteger initialstacksize);
-SQUIRREL_API HSQUIRRELVM sq_newthread(HSQUIRRELVM friendvm, SQInteger initialstacksize);
-SQUIRREL_API void sq_seterrorhandler(HSQUIRRELVM v);
-SQUIRREL_API void sq_close(HSQUIRRELVM v);
-SQUIRREL_API void sq_setforeignptr(HSQUIRRELVM v,SQUserPointer p);
-SQUIRREL_API SQUserPointer sq_getforeignptr(HSQUIRRELVM v);
-SQUIRREL_API void sq_setsharedforeignptr(HSQUIRRELVM v,SQUserPointer p);
-SQUIRREL_API SQUserPointer sq_getsharedforeignptr(HSQUIRRELVM v);
-SQUIRREL_API void sq_setvmreleasehook(HSQUIRRELVM v,SQRELEASEHOOK hook);
-SQUIRREL_API SQRELEASEHOOK sq_getvmreleasehook(HSQUIRRELVM v);
-SQUIRREL_API void sq_setsharedreleasehook(HSQUIRRELVM v,SQRELEASEHOOK hook);
-SQUIRREL_API SQRELEASEHOOK sq_getsharedreleasehook(HSQUIRRELVM v);
-SQUIRREL_API void sq_setprintfunc(HSQUIRRELVM v, SQPRINTFUNCTION printfunc,SQPRINTFUNCTION errfunc);
-SQUIRREL_API SQPRINTFUNCTION sq_getprintfunc(HSQUIRRELVM v);
-SQUIRREL_API SQPRINTFUNCTION sq_geterrorfunc(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_suspendvm(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_wakeupvm(HSQUIRRELVM v,SQBool resumedret,SQBool retval,SQBool raiseerror,SQBool throwerror);
-SQUIRREL_API SQInteger sq_getvmstate(HSQUIRRELVM v);
-SQUIRREL_API SQInteger sq_getversion();
+	/*
+	 * Miscellaneous things
+	 */
 
-/*compiler*/
-SQUIRREL_API SQRESULT sq_compile(HSQUIRRELVM v,SQLEXREADFUNC read,SQUserPointer p,const SQChar *sourcename,SQBool raiseerror);
-SQUIRREL_API SQRESULT sq_compilebuffer(HSQUIRRELVM v,const SQChar *s,SQInteger size,const SQChar *sourcename,SQBool raiseerror);
-SQUIRREL_API void sq_enabledebuginfo(HSQUIRRELVM v, SQBool enable);
-SQUIRREL_API void sq_notifyallexceptions(HSQUIRRELVM v, SQBool enable);
-SQUIRREL_API void sq_setcompilererrorhandler(HSQUIRRELVM v,SQCOMPILERERROR f);
+	/* vcmpErrorArgumentOutOfBounds, vcmpErrorNoSuchEntity */
+	vcmpError (*CreateExplosion) (int32_t worldId, int32_t type, float x, float y, float z, int32_t responsiblePlayerId, uint8_t atGroundLevel);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*PlaySound) (int32_t worldId, int32_t soundId, float x, float y, float z);
+	/* success */
+	void (*HideMapObject) (int32_t modelId, int16_t tenthX, int16_t tenthY, int16_t tenthZ);
+	/* success */
+	void (*ShowMapObject) (int32_t modelId, int16_t tenthX, int16_t tenthY, int16_t tenthZ);
+	/* success */
+	void (*ShowAllMapObjects) (void);
 
-/*stack operations*/
-SQUIRREL_API void sq_push(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API void sq_pop(HSQUIRRELVM v,SQInteger nelemstopop);
-SQUIRREL_API void sq_poptop(HSQUIRRELVM v);
-SQUIRREL_API void sq_remove(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQInteger sq_gettop(HSQUIRRELVM v);
-SQUIRREL_API void sq_settop(HSQUIRRELVM v,SQInteger newtop);
-SQUIRREL_API SQRESULT sq_reservestack(HSQUIRRELVM v,SQInteger nsize);
-SQUIRREL_API SQInteger sq_cmp(HSQUIRRELVM v);
-SQUIRREL_API void sq_move(HSQUIRRELVM dest,HSQUIRRELVM src,SQInteger idx);
+	/*
+	 * Weapon settings
+	 */
 
-/*object creation handling*/
-SQUIRREL_API SQUserPointer sq_newuserdata(HSQUIRRELVM v,SQUnsignedInteger size);
-SQUIRREL_API void sq_newtable(HSQUIRRELVM v);
-SQUIRREL_API void sq_newtableex(HSQUIRRELVM v,SQInteger initialcapacity);
-SQUIRREL_API void sq_newarray(HSQUIRRELVM v,SQInteger size);
-SQUIRREL_API void sq_newclosure(HSQUIRRELVM v,SQFUNCTION func,SQUnsignedInteger nfreevars);
-SQUIRREL_API SQRESULT sq_setparamscheck(HSQUIRRELVM v,SQInteger nparamscheck,const SQChar *typemask);
-SQUIRREL_API SQRESULT sq_bindenv(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_setclosureroot(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getclosureroot(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API void sq_pushstring(HSQUIRRELVM v,const SQChar *s,SQInteger len);
-SQUIRREL_API void sq_pushfloat(HSQUIRRELVM v,SQFloat f);
-SQUIRREL_API void sq_pushinteger(HSQUIRRELVM v,SQInteger n);
-SQUIRREL_API void sq_pushbool(HSQUIRRELVM v,SQBool b);
-SQUIRREL_API void sq_pushuserpointer(HSQUIRRELVM v,SQUserPointer p);
-SQUIRREL_API void sq_pushnull(HSQUIRRELVM v);
-SQUIRREL_API SQObjectType sq_gettype(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_typeof(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQInteger sq_getsize(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQHash sq_gethash(HSQUIRRELVM v, SQInteger idx);
-SQUIRREL_API SQRESULT sq_getbase(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQBool sq_instanceof(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_tostring(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API void sq_tobool(HSQUIRRELVM v, SQInteger idx, SQBool *b);
-SQUIRREL_API SQRESULT sq_getstring(HSQUIRRELVM v,SQInteger idx,const SQChar **c);
-SQUIRREL_API SQRESULT sq_getinteger(HSQUIRRELVM v,SQInteger idx,SQInteger *i);
-SQUIRREL_API SQRESULT sq_getfloat(HSQUIRRELVM v,SQInteger idx,SQFloat *f);
-SQUIRREL_API SQRESULT sq_getbool(HSQUIRRELVM v,SQInteger idx,SQBool *b);
-SQUIRREL_API SQRESULT sq_getthread(HSQUIRRELVM v,SQInteger idx,HSQUIRRELVM *thread);
-SQUIRREL_API SQRESULT sq_getuserpointer(HSQUIRRELVM v,SQInteger idx,SQUserPointer *p);
-SQUIRREL_API SQRESULT sq_getuserdata(HSQUIRRELVM v,SQInteger idx,SQUserPointer *p,SQUserPointer *typetag);
-SQUIRREL_API SQRESULT sq_settypetag(HSQUIRRELVM v,SQInteger idx,SQUserPointer typetag);
-SQUIRREL_API SQRESULT sq_gettypetag(HSQUIRRELVM v,SQInteger idx,SQUserPointer *typetag);
-SQUIRREL_API void sq_setreleasehook(HSQUIRRELVM v,SQInteger idx,SQRELEASEHOOK hook);
-SQUIRREL_API SQChar *sq_getscratchpad(HSQUIRRELVM v,SQInteger minsize);
-SQUIRREL_API SQRESULT sq_getfunctioninfo(HSQUIRRELVM v,SQInteger level,SQFunctionInfo *fi);
-SQUIRREL_API SQRESULT sq_getclosureinfo(HSQUIRRELVM v,SQInteger idx,SQUnsignedInteger *nparams,SQUnsignedInteger *nfreevars);
-SQUIRREL_API SQRESULT sq_getclosurename(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_setnativeclosurename(HSQUIRRELVM v,SQInteger idx,const SQChar *name);
-SQUIRREL_API SQRESULT sq_setinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer p);
-SQUIRREL_API SQRESULT sq_getinstanceup(HSQUIRRELVM v, SQInteger idx, SQUserPointer *p,SQUserPointer typetag);
-SQUIRREL_API SQRESULT sq_setclassudsize(HSQUIRRELVM v, SQInteger idx, SQInteger udsize);
-SQUIRREL_API SQRESULT sq_newclass(HSQUIRRELVM v,SQBool hasbase);
-SQUIRREL_API SQRESULT sq_createinstance(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_setattributes(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getattributes(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getclass(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API void sq_weakref(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getdefaultdelegate(HSQUIRRELVM v,SQObjectType t);
-SQUIRREL_API SQRESULT sq_getmemberhandle(HSQUIRRELVM v,SQInteger idx,HSQMEMBERHANDLE *handle);
-SQUIRREL_API SQRESULT sq_getbyhandle(HSQUIRRELVM v,SQInteger idx,const HSQMEMBERHANDLE *handle);
-SQUIRREL_API SQRESULT sq_setbyhandle(HSQUIRRELVM v,SQInteger idx,const HSQMEMBERHANDLE *handle);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetWeaponDataValue) (int32_t weaponId, int32_t fieldId, double value);
+	/* GetLastError: vcmpErrorArgumentOutOfBounds */
+	double (*GetWeaponDataValue) (int32_t weaponId, int32_t fieldId);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*ResetWeaponDataValue) (int32_t weaponId, int32_t fieldId);
+	/* GetLastError: vcmpErrorArgumentOutOfBounds */
+	uint8_t (*IsWeaponDataValueModified) (int32_t weaponId, int32_t fieldId);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*ResetWeaponData) (int32_t weaponId);
+	/* success */
+	void (*ResetAllWeaponData) (void);
 
-/*object manipulation*/
-SQUIRREL_API void sq_pushroottable(HSQUIRRELVM v);
-SQUIRREL_API void sq_pushregistrytable(HSQUIRRELVM v);
-SQUIRREL_API void sq_pushconsttable(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_setroottable(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_setconsttable(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_newslot(HSQUIRRELVM v, SQInteger idx, SQBool bstatic);
-SQUIRREL_API SQRESULT sq_deleteslot(HSQUIRRELVM v,SQInteger idx,SQBool pushval);
-SQUIRREL_API SQRESULT sq_set(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_get(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_rawget(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_rawset(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_rawdeleteslot(HSQUIRRELVM v,SQInteger idx,SQBool pushval);
-SQUIRREL_API SQRESULT sq_newmember(HSQUIRRELVM v,SQInteger idx,SQBool bstatic);
-SQUIRREL_API SQRESULT sq_rawnewmember(HSQUIRRELVM v,SQInteger idx,SQBool bstatic);
-SQUIRREL_API SQRESULT sq_arrayappend(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_arraypop(HSQUIRRELVM v,SQInteger idx,SQBool pushval); 
-SQUIRREL_API SQRESULT sq_arrayresize(HSQUIRRELVM v,SQInteger idx,SQInteger newsize); 
-SQUIRREL_API SQRESULT sq_arrayreverse(HSQUIRRELVM v,SQInteger idx); 
-SQUIRREL_API SQRESULT sq_arrayremove(HSQUIRRELVM v,SQInteger idx,SQInteger itemidx);
-SQUIRREL_API SQRESULT sq_arrayinsert(HSQUIRRELVM v,SQInteger idx,SQInteger destpos);
-SQUIRREL_API SQRESULT sq_setdelegate(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getdelegate(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_clone(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_setfreevariable(HSQUIRRELVM v,SQInteger idx,SQUnsignedInteger nval);
-SQUIRREL_API SQRESULT sq_next(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_getweakrefval(HSQUIRRELVM v,SQInteger idx);
-SQUIRREL_API SQRESULT sq_clear(HSQUIRRELVM v,SQInteger idx);
+	/*
+	 * Key binds
+	 */
 
-/*calls*/
-SQUIRREL_API SQRESULT sq_call(HSQUIRRELVM v,SQInteger params,SQBool retval,SQBool raiseerror);
-SQUIRREL_API SQRESULT sq_resume(HSQUIRRELVM v,SQBool retval,SQBool raiseerror);
-SQUIRREL_API const SQChar *sq_getlocal(HSQUIRRELVM v,SQUnsignedInteger level,SQUnsignedInteger idx);
-SQUIRREL_API SQRESULT sq_getcallee(HSQUIRRELVM v);
-SQUIRREL_API const SQChar *sq_getfreevariable(HSQUIRRELVM v,SQInteger idx,SQUnsignedInteger nval);
-SQUIRREL_API SQRESULT sq_throwerror(HSQUIRRELVM v,const SQChar *err);
-SQUIRREL_API SQRESULT sq_throwobject(HSQUIRRELVM v);
-SQUIRREL_API void sq_reseterror(HSQUIRRELVM v);
-SQUIRREL_API void sq_getlasterror(HSQUIRRELVM v);
+	/* -1 == vcmpEntityNone */
+	int32_t (*GetKeyBindUnusedSlot) (void);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetKeyBindData) (int32_t bindId, uint8_t* isCalledOnReleaseOut, int32_t* keyOneOut, int32_t* keyTwoOut, int32_t* keyThreeOut);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*RegisterKeyBind) (int32_t bindId, uint8_t isCalledOnRelease, int32_t keyOne, int32_t keyTwo, int32_t keyThree);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RemoveKeyBind) (int32_t bindId);
+	/* success */
+	void (*RemoveAllKeyBinds) (void);
 
-/*raw object handling*/
-SQUIRREL_API SQRESULT sq_getstackobj(HSQUIRRELVM v,SQInteger idx,HSQOBJECT *po);
-SQUIRREL_API void sq_pushobject(HSQUIRRELVM v,HSQOBJECT obj);
-SQUIRREL_API void sq_addref(HSQUIRRELVM v,HSQOBJECT *po);
-SQUIRREL_API SQBool sq_release(HSQUIRRELVM v,HSQOBJECT *po);
-SQUIRREL_API SQUnsignedInteger sq_getrefcount(HSQUIRRELVM v,HSQOBJECT *po);
-SQUIRREL_API void sq_resetobject(HSQOBJECT *po);
-SQUIRREL_API const SQChar *sq_objtostring(const HSQOBJECT *o);
-SQUIRREL_API SQBool sq_objtobool(const HSQOBJECT *o);
-SQUIRREL_API SQInteger sq_objtointeger(const HSQOBJECT *o);
-SQUIRREL_API SQFloat sq_objtofloat(const HSQOBJECT *o);
-SQUIRREL_API SQUserPointer sq_objtouserpointer(const HSQOBJECT *o);
-SQUIRREL_API SQRESULT sq_getobjtypetag(const HSQOBJECT *o,SQUserPointer * typetag);
+	/*
+	 * Coordinate blips
+	 */
 
-/*GC*/
-SQUIRREL_API SQInteger sq_collectgarbage(HSQUIRRELVM v);
-SQUIRREL_API SQRESULT sq_resurrectunreachable(HSQUIRRELVM v);
+	/* GetLastError: vcmpErrorPoolExhausted */
+	int32_t (*CreateCoordBlip) (int32_t index, int32_t world, float x, float y, float z, int32_t scale, uint32_t colour, int32_t sprite);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*DestroyCoordBlip) (int32_t index);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetCoordBlipInfo) (int32_t index, int32_t* worldOut, float* xOut, float* yOUt, float* zOut, int32_t* scaleOut, uint32_t* colourOut, int32_t* spriteOut);
 
-/*serialization*/
-SQUIRREL_API SQRESULT sq_writeclosure(HSQUIRRELVM vm,SQWRITEFUNC writef,SQUserPointer up);
-SQUIRREL_API SQRESULT sq_readclosure(HSQUIRRELVM vm,SQREADFUNC readf,SQUserPointer up);
+	/*
+	 * Radios
+	 */
 
-/*mem allocation*/
-SQUIRREL_API void *sq_malloc(SQUnsignedInteger size);
-SQUIRREL_API void *sq_realloc(void* p,SQUnsignedInteger oldsize,SQUnsignedInteger newsize);
-SQUIRREL_API void sq_free(void *p,SQUnsignedInteger size);
+	/* vcmpErrorArgumentOutOfBounds, vcmpErrorNullArgument */
+	vcmpError (*AddRadioStream) (int32_t radioId, const char* radioName, const char* radioUrl, uint8_t isListed);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RemoveRadioStream) (int32_t radioId);
 
-/*debug*/
-SQUIRREL_API SQRESULT sq_stackinfos(HSQUIRRELVM v,SQInteger level,SQStackInfos *si);
-SQUIRREL_API void sq_setdebughook(HSQUIRRELVM v);
-SQUIRREL_API void sq_setnativedebughook(HSQUIRRELVM v,SQDEBUGHOOK hook);
+	/*
+	 * Spawning and classes
+	 */
 
-/*UTILITY MACRO*/
-#define sq_isnumeric(o) ((o)._type&SQOBJECT_NUMERIC)
-#define sq_istable(o) ((o)._type==OT_TABLE)
-#define sq_isarray(o) ((o)._type==OT_ARRAY)
-#define sq_isfunction(o) ((o)._type==OT_FUNCPROTO)
-#define sq_isclosure(o) ((o)._type==OT_CLOSURE)
-#define sq_isgenerator(o) ((o)._type==OT_GENERATOR)
-#define sq_isnativeclosure(o) ((o)._type==OT_NATIVECLOSURE)
-#define sq_isstring(o) ((o)._type==OT_STRING)
-#define sq_isinteger(o) ((o)._type==OT_INTEGER)
-#define sq_isfloat(o) ((o)._type==OT_FLOAT)
-#define sq_isuserpointer(o) ((o)._type==OT_USERPOINTER)
-#define sq_isuserdata(o) ((o)._type==OT_USERDATA)
-#define sq_isthread(o) ((o)._type==OT_THREAD)
-#define sq_isnull(o) ((o)._type==OT_NULL)
-#define sq_isclass(o) ((o)._type==OT_CLASS)
-#define sq_isinstance(o) ((o)._type==OT_INSTANCE)
-#define sq_isbool(o) ((o)._type==OT_BOOL)
-#define sq_isweakref(o) ((o)._type==OT_WEAKREF)
-#define sq_type(o) ((o)._type)
+	/* GetLastError: vcmpErrorArgumentOutOfBounds, vcmpErrorPoolExhausted */
+	int32_t (*AddPlayerClass) (int32_t teamId, uint32_t colour, int32_t modelIndex, float x, float y, float z, float angle, int32_t weaponOne, int32_t weaponOneAmmo, int32_t weaponTwo, int32_t weaponTwoAmmo, int32_t weaponThree, int32_t weaponThreeAmmo);
+	/* success */
+	void (*SetSpawnPlayerPosition) (float x, float y, float z);
+	/* success */
+	void (*SetSpawnCameraPosition) (float x, float y, float z);
+	/* success */
+	void (*SetSpawnCameraLookAt) (float x, float y, float z);
 
-/* deprecated */
-#define sq_createslot(v,n) sq_newslot(v,n,SQFalse)
+	/*
+	 * Administration
+	 */
+	
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerAdmin) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerAdmin) (int32_t playerId, uint8_t toggle);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetPlayerIP) (int32_t playerId, char* buffer, size_t size);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetPlayerUID) (int32_t playerId, char* buffer, size_t size);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetPlayerUID2) (int32_t playerId, char* buffer, size_t size);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*KickPlayer) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*BanPlayer) (int32_t playerId);
+	/* success */
+	void (*BanIP) (char* ipAddress);
+	/* success */
+	uint8_t (*UnbanIP) (char* ipAddress);
+	/* success */
+	uint8_t (*IsIPBanned) (char* ipAddress);
 
-#define SQ_OK (0)
-#define SQ_ERROR (-1)
+	/*
+	 * Player access and basic info
+	 */
 
-#define SQ_FAILED(res) (res<0)
-#define SQ_SUCCEEDED(res) (res>=0)
+	/* -1 == vcmpEntityNone */
+	int32_t (*GetPlayerIdFromName) (const char* name);
+	/* success */
+	uint8_t (*IsPlayerConnected) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerStreamedForPlayer) (int32_t checkedPlayerId, int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	uint32_t (*GetPlayerKey) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorBufferTooSmall */
+	vcmpError (*GetPlayerName) (int32_t playerId, char* buffer, size_t size);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument, vcmpErrorInvalidName, vcmpErrorTooLargeInput */
+	vcmpError (*SetPlayerName) (int32_t playerId, const char* name);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	vcmpPlayerState (*GetPlayerState) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPlayerOption) (int32_t playerId, vcmpPlayerOption option, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	uint8_t (*GetPlayerOption) (int32_t playerId, vcmpPlayerOption option);
 
-#ifdef __cplusplus
-} /*extern "C"*/
-#endif
+	/*
+	 * Player world
+	 */
 
-#endif /*_SQUIRREL_H_*/
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerWorld) (int32_t playerId, int32_t world);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerWorld) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerSecondaryWorld) (int32_t playerId, int32_t secondaryWorld);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerSecondaryWorld) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerUniqueWorld) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerWorldCompatible) (int32_t playerId, int32_t world);
+
+	/*
+	 * Player class, team, skin, colour
+	 */
+
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerClass) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPlayerTeam) (int32_t playerId, int32_t teamId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerTeam) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPlayerSkin) (int32_t playerId, int32_t skinId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerSkin) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerColour) (int32_t playerId, uint32_t colour);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetPlayerColour) (int32_t playerId);
+
+	/*
+	 * Player spawn cycle
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerSpawned) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*ForcePlayerSpawn) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*ForcePlayerSelect) (int32_t playerId);
+	/* success */
+	void (*ForceAllSelect) (void);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerTyping) (int32_t playerId);
+
+	/*
+	 * Player money, score, wanted level
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GivePlayerMoney) (int32_t playerId, int32_t amount);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerMoney) (int32_t playerId, int32_t amount);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerMoney) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerScore) (int32_t playerId, int32_t score);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerScore) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerWantedLevel) (int32_t playerId, int32_t level);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerWantedLevel) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerPing) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	double (*GetPlayerFPS) (int32_t playerId);
+
+	/*
+	 * Player health and immunity
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerHealth) (int32_t playerId, float health);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	float (*GetPlayerHealth) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerArmour) (int32_t playerId, float armour);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	float (*GetPlayerArmour) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerImmunityFlags) (int32_t playerId, uint32_t flags);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetPlayerImmunityFlags) (int32_t playerId);
+
+	/*
+	 * Player position and rotation
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerPosition) (int32_t playerId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetPlayerPosition) (int32_t playerId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerSpeed) (int32_t playerId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetPlayerSpeed) (int32_t playerId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*AddPlayerSpeed) (int32_t playerId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerHeading) (int32_t playerId, float angle);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	float (*GetPlayerHeading) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerAlpha) (int32_t playerId, int32_t alpha, uint32_t fadeTime);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerAlpha) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetPlayerAimPosition) (int32_t playerId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetPlayerAimDirection) (int32_t playerId, float* xOut, float* yOut, float* zOut);
+
+	/*
+	 * Player actions and keys
+	 */
+
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerOnFire) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerCrouching) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerAction) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetPlayerGameKeys) (int32_t playerId);
+
+	/*
+	 * Player vehicle
+	 */
+
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds, vcmpErrorRequestDenied */
+	vcmpError (*PutPlayerInVehicle) (int32_t playerId, int32_t vehicleId, int32_t slotIndex, uint8_t makeRoom, uint8_t warp);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RemovePlayerFromVehicle) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	vcmpPlayerVehicle (*GetPlayerInVehicleStatus) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerInVehicleSlot) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerVehicleId) (int32_t playerId);
+
+	/*
+	 * Player weapons
+	 */
+
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*GivePlayerWeapon) (int32_t playerId, int32_t weaponId, int32_t ammo);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPlayerWeapon) (int32_t playerId, int32_t weaponId, int32_t ammo);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerWeapon) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerWeaponAmmo) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPlayerWeaponSlot) (int32_t playerId, int32_t slot);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerWeaponSlot) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	int32_t (*GetPlayerWeaponAtSlot) (int32_t playerId, int32_t slot);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	int32_t (*GetPlayerAmmoAtSlot) (int32_t playerId, int32_t slot);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RemovePlayerWeapon) (int32_t playerId, int32_t weaponId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RemoveAllWeapons) (int32_t playerId);
+
+	/*
+	 * Player camera
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetCameraPosition) (int32_t playerId, float posX, float posY, float posZ, float lookX, float lookY, float lookZ);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RestoreCamera) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsCameraLocked) (int32_t playerId);
+
+	/*
+	 * Player miscellaneous stuff
+	 */
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerAnimation) (int32_t playerId, int32_t groupId, int32_t animationId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerStandingOnVehicle) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerStandingOnObject) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPlayerAway) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	int32_t (*GetPlayerSpectateTarget) (int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerSpectateTarget) (int32_t playerId, int32_t targetId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument */
+	vcmpError (*RedirectPlayerToServer) (int32_t playerId, const char* ip, uint32_t port, const char* nick, const char* serverPassword, const char* userPassword);
+
+	/*
+	 * All entities
+	 */
+
+	/* GetLastError: vcmpArgumentOutOfBounds */
+	uint8_t (*CheckEntityExists) (vcmpEntityPool entityPool, int32_t index);
+
+	/*
+	 * Vehicles
+	 */
+
+	/* GetLastError: vcmpErrorArgumentOutOfBounds, vcmpErrorPoolExhausted */
+	int32_t (*CreateVehicle) (int32_t modelIndex, int32_t world, float x, float y, float z, float angle, int32_t primaryColour, int32_t secondaryColour);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*DeleteVehicle) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetVehicleOption) (int32_t vehicleId, vcmpVehicleOption option, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	uint8_t (*GetVehicleOption) (int32_t vehicleId, vcmpVehicleOption option);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehicleSyncSource) (int32_t vehicleId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	vcmpVehicleSync (*GetVehicleSyncType) (int32_t vehicleId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsVehicleStreamedForPlayer) (int32_t vehicleId, int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleWorld) (int32_t vehicleId, int32_t world);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehicleWorld) (int32_t vehicleId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehicleModel) (int32_t vehicleId);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	int32_t (*GetVehicleOccupant) (int32_t vehicleId, int32_t slotIndex);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RespawnVehicle) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleImmunityFlags) (int32_t vehicleId, uint32_t immunityFlags);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetVehicleImmunityFlags) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*ExplodeVehicle) (int32_t vehicleId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsVehicleWrecked) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehiclePosition) (int32_t vehicleId, float x, float y, float z, uint8_t removeOccupants);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehiclePosition) (int32_t vehicleId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleRotation) (int32_t vehicleId, float x, float y, float z, float w);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleRotationEuler) (int32_t vehicleId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleRotation) (int32_t vehicleId, float* xOut, float* yOut, float* zOut, float* wOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleRotationEuler) (int32_t vehicleId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleSpeed) (int32_t vehicleId, float x, float y, float z, uint8_t add, uint8_t relative);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleSpeed) (int32_t vehicleId, float* xOut, float* yOut, float* zOut, uint8_t relative);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleTurnSpeed) (int32_t vehicleId, float x, float y, float z, uint8_t add, uint8_t relative);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleTurnSpeed) (int32_t vehicleId, float* xOut, float* yOut, float* zOut, uint8_t relative);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleSpawnPosition) (int32_t vehicleId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleSpawnPosition) (int32_t vehicleId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleSpawnRotation) (int32_t vehicleId, float x, float y, float z, float w);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleSpawnRotationEuler) (int32_t vehicleId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleSpawnRotation) (int32_t vehicleId, float* xOut, float* yOut, float* zOut, float* wOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleSpawnRotationEuler) (int32_t vehicleId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleIdleRespawnTimer) (int32_t vehicleId, uint32_t millis);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetVehicleIdleRespawnTimer) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleHealth) (int32_t vehicleId, float health);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	float (*GetVehicleHealth) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleColour) (int32_t vehicleId, int32_t primaryColour, int32_t secondaryColour);
+	/* vcmpErrorNoSuchEntity, vcmpErrorNullArgument */
+	vcmpError (*GetVehicleColour) (int32_t vehicleId, int32_t* primaryColourOut, int32_t* secondaryColourOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehiclePartStatus) (int32_t vehicleId, int32_t partId, int32_t status);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehiclePartStatus) (int32_t vehicleId, int32_t partId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleTyreStatus) (int32_t vehicleId, int32_t tyreId, int32_t status);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehicleTyreStatus) (int32_t vehicleId, int32_t tyreId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleDamageData) (int32_t vehicleId, uint32_t damageData);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetVehicleDamageData) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleRadio) (int32_t vehicleId, int32_t radioId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetVehicleRadio) (int32_t vehicleId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetVehicleTurretRotation) (int32_t vehicleId, float* horizontalOut, float* verticalOut);
+
+	/*
+	 * Vehicle handling
+	 */
+
+	/* success */
+	void (*ResetAllVehicleHandlings) (void);
+	/* vcmpErrorArgumentOutOfBounds */
+	uint8_t (*ExistsHandlingRule) (int32_t modelIndex, int32_t ruleIndex);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetHandlingRule) (int32_t modelIndex, int32_t ruleIndex, double value);
+	/* GetLastError: vcmpErrorArgumentOutOfBounds */
+	double (*GetHandlingRule) (int32_t modelIndex, int32_t ruleIndex);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*ResetHandlingRule) (int32_t modelIndex, int32_t ruleIndex);
+	/* vcmpErrorArgumentOutOfBounds */
+	vcmpError (*ResetHandling) (int32_t modelIndex);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	uint8_t (*ExistsInstHandlingRule) (int32_t vehicleId, int32_t ruleIndex);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetInstHandlingRule) (int32_t vehicleId, int32_t ruleIndex, double value);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	double (*GetInstHandlingRule) (int32_t vehicleId, int32_t ruleIndex);
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*ResetInstHandlingRule) (int32_t vehicleId, int32_t ruleIndex);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*ResetInstHandling) (int32_t vehicleId);
+
+	/*
+	 * Pickups
+	 */
+
+	/* vcmpErrorPoolExhausted */
+	int32_t (*CreatePickup) (int32_t modelIndex, int32_t world, int32_t quantity, float x, float y, float z, int32_t alpha, uint8_t isAutomatic);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*DeletePickup) (int32_t pickupId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPickupStreamedForPlayer) (int32_t pickupId, int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPickupWorld) (int32_t pickupId, int32_t world);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPickupWorld) (int32_t pickupId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPickupAlpha) (int32_t pickupId, int32_t alpha);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPickupAlpha) (int32_t pickupId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPickupIsAutomatic) (int32_t pickupId, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsPickupAutomatic) (int32_t pickupId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPickupAutoTimer) (int32_t pickupId, uint32_t durationMillis);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetPickupAutoTimer) (int32_t pickupId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RefreshPickup) (int32_t pickupId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPickupPosition) (int32_t pickupId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetPickupPosition) (int32_t pickupId, float* xOut, float* yOut, float* zOut);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPickupModel) (int32_t pickupId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetPickupQuantity) (int32_t pickupId);
+
+	/*
+	 * Checkpoints
+	 */
+
+	/* vcmpErrorPoolExhausted, vcmpErrorNoSuchEntity */
+	int32_t (*CreateCheckPoint) (int32_t playerId, int32_t world, uint8_t isSphere, float x, float y, float z, int32_t red, int32_t green, int32_t blue, int32_t alpha, float radius);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*DeleteCheckPoint) (int32_t checkPointId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsCheckPointStreamedForPlayer) (int32_t checkPointId, int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsCheckPointSphere) (int32_t checkPointId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetCheckPointWorld) (int32_t checkPointId, int32_t world);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetCheckPointWorld) (int32_t checkPointId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetCheckPointColour) (int32_t checkPointId, int32_t red, int32_t green, int32_t blue, int32_t alpha);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetCheckPointColour) (int32_t checkPointId, int32_t* redOut, int32_t* greenOut, int32_t* blueOut, int32_t* alphaOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetCheckPointPosition) (int32_t checkPointId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetCheckPointPosition) (int32_t checkPointId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetCheckPointRadius) (int32_t checkPointId, float radius);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	float (*GetCheckPointRadius) (int32_t checkPointId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetCheckPointOwner) (int32_t checkPointId);
+
+	/*
+	 * Objects
+	 */
+
+	/* GetLastError: vcmpErrorPoolExhausted */
+	int32_t (*CreateObject) (int32_t modelIndex, int32_t world, float x, float y, float z, int32_t alpha);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*DeleteObject) (int32_t objectId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsObjectStreamedForPlayer) (int32_t objectId, int32_t playerId);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetObjectModel) (int32_t objectId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetObjectWorld) (int32_t objectId, int32_t world);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetObjectWorld) (int32_t objectId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetObjectAlpha) (int32_t objectId, int32_t alpha, uint32_t duration);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	int32_t (*GetObjectAlpha) (int32_t objectId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*MoveObjectTo) (int32_t objectId, float x, float y, float z, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*MoveObjectBy) (int32_t objectId, float x, float y, float z, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetObjectPosition) (int32_t objectId, float x, float y, float z);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetObjectPosition) (int32_t objectId, float* xOut, float* yOut, float* zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RotateObjectTo) (int32_t objectId, float x, float y, float z, float w, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RotateObjectToEuler) (int32_t objectId, float x, float y, float z, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RotateObjectBy) (int32_t objectId, float x, float y, float z, float w, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*RotateObjectByEuler) (int32_t objectId, float x, float y, float z, uint32_t duration);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetObjectRotation) (int32_t objectId, float* xOut, float* yOut, float *zOut, float *wOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*GetObjectRotationEuler) (int32_t objectId, float* xOut, float* yOut, float *zOut);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetObjectShotReportEnabled) (int32_t objectId, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsObjectShotReportEnabled) (int32_t objectId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetObjectTouchedReportEnabled) (int32_t objectId, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*IsObjectTouchedReportEnabled) (int32_t objectId);
+
+	// TODO: MOVE LATER
+	vcmpError (*GetPlayerModuleList) (int32_t playerId);
+
+	/* vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	vcmpError (*SetPickupOption) (int32_t pickupId, vcmpPickupOption option, uint8_t toggle);
+	/* GetLastError: vcmpErrorNoSuchEntity, vcmpErrorArgumentOutOfBounds */
+	uint8_t (*GetPickupOption) (int32_t pickupId, vcmpPickupOption option);
+
+	/* success */
+	void (*SetFallTimer) (uint16_t timeRate);
+	/* success */
+	uint16_t (*GetFallTimer) (void);
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicleLightsData) (int32_t vehicleId, uint32_t lightsData);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetVehicleLightsData) (int32_t vehicleId);
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*KillPlayer) (int32_t playerId);
+
+/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetVehicle3DArrowForPlayer) (int32_t nVehicleId, int32_t nTargetPlayerId, uint8_t bEnabled);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*GetVehicle3DArrowForPlayer) (int32_t nVehicleId, int32_t nTargetPlayerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayer3DArrowForPlayer) (int32_t nPlayerId, int32_t nTargetPlayerId, uint8_t bEnabled);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*GetPlayer3DArrowForPlayer) (int32_t nVehicleId, int32_t nTargetPlayerId);
+
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerDrunkHandling) (int32_t playerId, uint32_t drunkLevel);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint32_t (*GetPlayerDrunkHandling) (int32_t playerId);
+	/* vcmpErrorNoSuchEntity */
+	vcmpError (*SetPlayerDrunkVisuals) (int32_t playerId, uint8_t drunkLevel);
+	/* GetLastError: vcmpErrorNoSuchEntity */
+	uint8_t (*GetPlayerDrunkVisuals) (int32_t playerId);
+
+	/* vcmpErrorNoSuchEntity, vcmpErrorRequestDenied */
+	vcmpError (*InterpolateCameraLookAt) (int32_t playerId, float lookX, float lookY, float lookZ, uint32_t interpTimeMS);
+
+} PluginFuncs;
+
+typedef struct {
+	uint32_t structSize;
+
+	uint8_t (*OnServerInitialise) (void);
+	void (*OnServerShutdown) (void);
+	void (*OnServerFrame) (float elapsedTime);
+
+	uint8_t (*OnPluginCommand) (uint32_t commandIdentifier, const char* message);
+	uint8_t (*OnIncomingConnection) (char* playerName, size_t nameBufferSize, const char* userPassword, const char* ipAddress);
+	void (*OnClientScriptData) (int32_t playerId, const uint8_t* data, size_t size);
+
+	void (*OnPlayerConnect) (int32_t playerId);
+	void (*OnPlayerDisconnect) (int32_t playerId, vcmpDisconnectReason reason);
+
+	uint8_t (*OnPlayerRequestClass) (int32_t playerId, int32_t offset);
+	uint8_t (*OnPlayerRequestSpawn) (int32_t playerId);
+	void (*OnPlayerSpawn) (int32_t playerId);
+	void (*OnPlayerDeath) (int32_t playerId, int32_t killerId, int32_t reason, vcmpBodyPart bodyPart);
+	void (*OnPlayerUpdate) (int32_t playerId, vcmpPlayerUpdate updateType);
+
+	uint8_t (*OnPlayerRequestEnterVehicle) (int32_t playerId, int32_t vehicleId, int32_t slotIndex);
+	void (*OnPlayerEnterVehicle) (int32_t playerId, int32_t vehicleId, int32_t slotIndex);
+	void (*OnPlayerExitVehicle) (int32_t playerId, int32_t vehicleId);
+
+	void (*OnPlayerNameChange) (int32_t playerId, const char* oldName, const char* newName);
+	void (*OnPlayerStateChange) (int32_t playerId, vcmpPlayerState oldState, vcmpPlayerState newState);
+	void (*OnPlayerActionChange) (int32_t playerId, int32_t oldAction, int32_t newAction);
+	void (*OnPlayerOnFireChange) (int32_t playerId, uint8_t isOnFire);
+	void (*OnPlayerCrouchChange) (int32_t playerId, uint8_t isCrouching);
+	void (*OnPlayerGameKeysChange) (int32_t playerId, uint32_t oldKeys, uint32_t newKeys);
+	void (*OnPlayerBeginTyping) (int32_t playerId);
+	void (*OnPlayerEndTyping) (int32_t playerId);
+	void (*OnPlayerAwayChange) (int32_t playerId, uint8_t isAway);
+
+	uint8_t (*OnPlayerMessage) (int32_t playerId, const char* message);
+	uint8_t (*OnPlayerCommand) (int32_t playerId, const char* message);
+	uint8_t (*OnPlayerPrivateMessage) (int32_t playerId, int32_t targetPlayerId, const char* message);
+
+	void (*OnPlayerKeyBindDown) (int32_t playerId, int32_t bindId);
+	void (*OnPlayerKeyBindUp) (int32_t playerId, int32_t bindId);
+	void (*OnPlayerSpectate) (int32_t playerId, int32_t targetPlayerId);
+	void (*OnPlayerCrashReport) (int32_t playerId, const char* report);
+
+	void (*OnVehicleUpdate) (int32_t vehicleId, vcmpVehicleUpdate updateType);
+	void (*OnVehicleExplode) (int32_t vehicleId);
+	void (*OnVehicleRespawn) (int32_t vehicleId);
+
+	void (*OnObjectShot) (int32_t objectId, int32_t playerId, int32_t weaponId);
+	void (*OnObjectTouched) (int32_t objectId, int32_t playerId);
+
+	uint8_t (*OnPickupPickAttempt) (int32_t pickupId, int32_t playerId);
+	void (*OnPickupPicked) (int32_t pickupId, int32_t playerId);
+	void (*OnPickupRespawn) (int32_t pickupId);
+
+	void (*OnCheckpointEntered) (int32_t checkPointId, int32_t playerId);
+	void (*OnCheckpointExited) (int32_t checkPointId, int32_t playerId);
+
+	void (*OnEntityPoolChange) (vcmpEntityPool entityType, int32_t entityId, uint8_t isDeleted);
+	void (*OnServerPerformanceReport) (size_t entryCount, const char** descriptions, uint64_t* times);
+
+	// TODO: MOVE LATER
+	void(*OnPlayerModuleList) (int32_t playerId, const char* list);
+
+} PluginCallbacks;
